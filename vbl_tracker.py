@@ -1,30 +1,19 @@
 
 import streamlit as st
 import pandas as pd
-import yfinance as yf
-from datetime import datetime
 
 st.set_page_config(page_title="VBL SIP Tracker", layout="wide")
 
-st.title("Varun Beverages (VBL) SIP Tracker")
-st.markdown("Track your monthly SIP investments with live stock prices fetched from Yahoo Finance.")
+st.title("Varun Beverages (VBL) SIP Tracker - Based on Historical Order Prices")
+st.markdown("This app uses real month-end prices (from order history) to track SIP investments.")
 
-# Constants
 sip_amount = 5000
-stock_symbol = "VBL.NS"
-start_date = "2024-04-01"
-months = pd.date_range(start=start_date, periods=12, freq='MS').strftime('%b-%Y')
+monthly_prices = {'Apr-2024': 15260.25, 'May-2024': 10944.0, 'Jun-2024': 4720.4, 'Jul-2024': 21467.55, 'Aug-2024': 6175.0, 'Sep-2024': 12414.0, 'Oct-2024': 3274.0, 'Nov-2024': 11527.92, 'Dec-2024': 17291.88, 'Jan-2025': 1672.5, 'Feb-2025': 1115.0, 'Mar-2025': 4391.87}
 
-# Fetch live stock price
-ticker = yf.Ticker(stock_symbol)
-current_price = ticker.history(period="1d")['Close'].iloc[-1] if not ticker.history(period="1d").empty else 0
-st.metric("Live VBL Price", f"₹{round(current_price, 2)}")
-
-# SIP Tracker
 sip_data = []
 total_units = 0
-for i, month in enumerate(months):
-    price = current_price
+
+for i, (month, price) in enumerate(monthly_prices.items()):
     units = sip_amount / price if price else 0
     total_units += units
     invested = sip_amount * (i + 1)
