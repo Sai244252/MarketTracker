@@ -1,42 +1,34 @@
 import streamlit as st
 import pandas as pd
-import yfinance as yf
 from datetime import datetime
 
-st.set_page_config(page_title="VBL SIP Tracker (Historical Monthly Close)", layout="wide")
+st.set_page_config(page_title="VBL SIP Tracker (Excel Based)", layout="wide")
 st.title("Varun Beverages (VBL) SIP Tracker")
-st.markdown("This tracker uses **historical month-end prices** to calculate SIP returns.")
+st.markdown("Upload your order history Excel to track SIP performance based on actual transactions.")
 
-# Constants
-sip_amount = 5000
-symbol = "VBL.NS"  # Yahoo Finance symbol for Varun Beverages
-start_date = "2022-06-01"
-months = pd.date_range(start=start_date, periods=48, freq='M')  # Month-end dates
+# Upload Excel file
+uploaded_file = st.file_uploader("Upload VBL Order History Excel", type=["xlsx"])
 
-# Fetch historical month-end prices
-data = yf.download(symbol, start=start_date, end=months[-1].strftime('%Y-%m-%d'))
-data = data.resample('M').last()  # Ensure month-end prices
+if uploaded_file:
+    df_orders = pd.read_excel(uploaded_file)
+    df_orders['Date'] = pd.to_datetime(df_orders['Date'])
+    df_orders.sort_values(by='Date', inplace=True)
 
-# Generate SIP data
-sip_data = []
-total_units = 0
+    # Calculate derived metrics
+    df_orders['Units'] = df_orders['Invested'] / df_orders['Price']
+    df_orders['Cumulative Units'] = df_orders['Units'].cumsum()
+    df_orders['Cumulative Investment'] = df_orders['Invested'].cumsum()
 
-for i, month in enumerate(months):
-    price_row = data.loc[data.index.month == month.month]
-    if not price_row.empty:
-        price = float(price_row['Close'].values[-1])
-        units = sip_amount / price
-        total_units += units
-        invested = sip_amount * (i + 1)
-        current_value = total_units * price
-        gain_loss = current_value - invested
-        sip_data.append([month.strftime('%b-%Y'), sip_amount, round(price, 2), round(units, 4), round(total_units, 4),
-                         invested, round(current_value, 2), round(gain_loss, 2)])
+    # Get latest price (assume from last row's price or future integration)
+    latest_price = df_orders.iloc[-1]['Price']
+    df_orders['Current Value'] = df_orders['Cumulative Units'] * latest_price
+    df_orders['Gain/Loss'] = df_orders['Current Value'] - df_orders['Cumulative Investment']
 
-# Display DataFrame
-columns = ["Month", "Investment (₹)", "Price (₹)", "Units Bought", "Total Units",
-           "Cumulative Investment (₹)", "Current Value (₹)", "Gain/Loss (₹)"]
-df = pd.DataFrame(sip_data, columns=columns)
-st.dataframe(df, use_container_width=True)
+    st.dataframe(df_orders, use_container_width=True)
 
-st.caption("Prices are pulled from Yahoo Finance using yfinance and represent the closing price at each month's end.")
+    st.metric("Total Investment", f"₹{df_orders['Cumulative Investment'].iloc[-1]:,.2f}")
+    st.metric("Total Units", f"{df_orders['Cumulative Units'].iloc[-1]:,.4f}")
+    st.metric("Current Value", f"₹{df_orders['Current Value'].iloc[-1]:,.2f}")
+    st.metric("Gain / Loss", f"₹{df_orders['Gain/Loss'].iloc[-1]:,.2f}")
+else:
+    st.info("Please upload an Excel file containing your order history.")
