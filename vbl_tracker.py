@@ -10,8 +10,8 @@ st.markdown("This tracker uses **historical month-end prices** to calculate SIP 
 # Constants
 sip_amount = 5000
 symbol = "VBL.NS"  # Yahoo Finance symbol for Varun Beverages
-start_date = "2024-04-01"
-months = pd.date_range(start=start_date, periods=12, freq='M')  # Month-end dates
+start_date = "2022-06-01"
+months = pd.date_range(start=start_date, periods=48, freq='M')  # Month-end dates
 
 # Fetch historical month-end prices
 data = yf.download(symbol, start=start_date, end=months[-1].strftime('%Y-%m-%d'))
